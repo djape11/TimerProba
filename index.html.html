@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Sparring Pro - Boxing Timer</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #666666;
+            --accent-color: #ff6b35;
+            --accent-secondary: #f7931e;
+            --accent-rest: #00d9ff;
+            --border-color: #222222;
+            --shadow-color: rgba(255, 107, 53, 0.2);
+            --shadow-rest: rgba(0, 217, 255, 0.2);
+            --menu-bg: #1a1a1a;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #444444;
+            --text-muted: #888888;
+            --accent-color: #e55a2b;
+            --accent-secondary: #e67e22;
+            --accent-rest: #0099cc;
+            --border-color: #dddddd;
+            --shadow-color: rgba(229, 90, 43, 0.15);
+            --shadow-rest: rgba(0, 153, 204, 0.15);
+            --menu-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .hamburger {
+            width: 30px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .hamburger span {
+            width: 100%;
+            height: 3px;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(7px, 7px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px var(--shadow-color);
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 85%;
+            max-width: 350px;
+            height: 100vh;
+            background: var(--menu-bg);
+            z-index: 999;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            padding: 80px 20px 20px;
+        }
+
+        .side-menu.open {
+            left: 0;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .menu-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .menu-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-section {
+            margin-bottom: 30px;
+        }
+
+        .menu-section-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px 20px;
+            position: relative;
+        }
+
+        .timer-display {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .timer-circle {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--accent-color) var(--progress, 0%), var(--bg-tertiary) var(--progress, 0%));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 0 40px var(--shadow-color);
+            transition: box-shadow 0.3s, background 0.3s;
+            animation: none;
+        }
+
+        .timer-circle.countdown {
+            background: conic-gradient(from 0deg, var(--accent-secondary) var(--progress, 0%), var(--bg-tertiary) var(--progress, 0%));
+            box-shadow: 0 0 60px rgba(247, 147, 30, 0.5);
+            animation: pulse-countdown 0.5s ease-in-out;
+        }
+
+        .timer-circle.rest {
+            background: conic-gradient(from 0deg, var(--accent-rest) var(--progress, 0%), var(--bg-tertiary) var(--progress, 0%));
+            box-shadow: 0 0 40px var(--shadow-rest);
+        }
+
+        @keyframes pulse-countdown {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .timer-inner {
+            width: 240px;
+            height: 240px;
+            background: var(--bg-primary);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid var(--border-color);
+            transition: background 0.3s, border-color 0.3s;
+        }
+
+        .time-text {
+            font-size: 4rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+            line-height: 1;
+            transition: transform 0.2s, color 0.3s;
+            color: var(--text-primary);
+        }
+
+        .time-text.pop {
+            transform: scale(1.2);
+            color: var(--accent-color);
+        }
+
+        .phase-label {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--accent-color);
+        }
+
+        .phase-label.rest {
+            color: var(--accent-rest);
+        }
+
+        .phase-label.countdown {
+            color: var(--accent-secondary);
+            animation: blink 0.5s ease-in-out;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .round-info {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn {
+            border: none;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid var(--border-color);
+            min-width: 120px;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary));
+            border: none;
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 2px 8px var(--shadow-color);
+        }
+
+        .btn-danger {
+            background: var(--bg-tertiary);
+            border-color: var(--border-color);
+        }
+
+        .settings-panel {
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s, border-color 0.3s;
+            margin-top: 20px;
+        }
+
+        .settings-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .setting-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .setting-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-small {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-small:active {
+            transform: scale(0.9);
+            background: var(--accent-color);
+        }
+
+        .setting-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+        }
+
+        .toggle {
+            width: 50px;
+            height: 28px;
+            background: var(--text-muted);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--accent-color);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle.active::after {
+            transform: translateX(22px);
+        }
+
+        .increment-selector {
+            display: flex;
+            gap: 5px;
+            background: var(--bg-primary);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .increment-option {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .increment-option.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .volume-value {
+            font-size: 1rem;
+            font-weight: 700;
+            min-width: 45px;
+            text-align: right;
+            color: var(--text-primary);
+        }
+
+        .theme-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-option {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .theme-option.active {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: var(--bg-tertiary);
+        }
+
+        .theme-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        .theme-icon.dark {
+            background: #0a0a0a;
+            border: 2px solid #333;
+        }
+
+        .theme-icon.light {
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+        }
+
+        .test-sound-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .test-sound-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        /* Website Link Button */
+        .website-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .website-link:hover,
+        .website-link:active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .website-link span {
+            font-size: 1.2rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .warning {
+            animation: pulse 1s infinite;
+            color: #ff3333 !important;
+        }
+
+        @media (max-height: 700px) {
+            .timer-circle {
+                width: 240px;
+                height: 240px;
+            }
+            .timer-inner {
+                width: 200px;
+                height: 200px;
+            }
+            .time-text {
+                font-size: 3.5rem;
+            }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="header">
+        <div class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <h1>Sparring Pro</h1>
+        <div style="width: 30px;"></div>
+    </div>
+
+    <div class="menu-overlay" id="menuOverlay"></div>
+
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-title">⚙️ Pro Settings</div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Time Increments</div>
+            <div class="increment-selector" id="incrementSelector">
+                <button class="increment-option" data-increment="15">15s</button>
+                <button class="increment-option active" data-increment="30">30s</button>
+                <button class="increment-option" data-increment="60">1m</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Bell Volume</div>
+            <div class="volume-control">
+                <input type="range" class="volume-slider" id="bellVolume" min="0" max="100" value="80">
+                <span class="volume-value" id="volumeValue">80%</span>
+            </div>
+            <button class="test-sound-btn" id="testSoundBtn">🔔 Test Bell Sound</button>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Theme</div>
+            <div class="theme-selector" id="themeSelector">
+                <button class="theme-option active" data-theme="dark">
+                    <span class="theme-icon dark"></span>
+                    Dark
+                </button>
+                <button class="theme-option" data-theme="light">
+                    <span class="theme-icon light"></span>
+                    Light
+                </button>
+            </div>
+        </div>
+
+        <!-- Website Link Section -->
+        <div class="menu-section">
+            <div class="menu-section-title">More</div>
+            <a href="https://pantech.io" target="_blank" class="website-link" id="websiteLink">
+                Visit Pantech Website →
+            </a>
+        </div>
+    </div>
+
+    <div class="screen">
+        <div class="timer-display">
+            <div class="timer-circle" id="timerCircle">
+                <div class="timer-inner">
+                    <div class="time-text" id="timeDisplay">03:00</div>
+                    <div class="phase-label" id="phaseLabel">READY</div>
+                </div>
+            </div>
+            <div class="round-info" id="roundInfo">Round 1 of 3</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="startBtn">Start</button>
+            <button class="btn btn-danger" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="settings-panel">
+            <div class="settings-title">⚙️ Timer Settings</div>
+
+            <div class="setting-row">
+                <span class="setting-label">Round Duration</span>
+                <div class="setting-control">
+                    <button class="btn-small" id="roundMinus">−</button>
+                    <span class="setting-value" id="roundTime">3:00</span>
+                    <button class="btn-small" id="roundPlus">+</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Rest Duration</span>
+                <div class="setting-control">
+                    <button class="btn-small" id="restMinus">−</button>
+                    <span class="setting-value" id="restTime">1:00</span>
+                    <button class="btn-small" id="restPlus">+</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Number of Rounds</span>
+                <div class="setting-control">
+                    <button class="btn-small" id="roundsMinus">−</button>
+                    <span class="setting-value" id="roundsCount">3</span>
+                    <button class="btn-small" id="roundsPlus">+</button>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Sound</span>
+                <div class="toggle active" id="soundToggle"></div>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">Vibration</span>
+                <div class="toggle active" id="vibrationToggle"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        let state = {
+            isRunning: false,
+            isPaused: false,
+            currentRound: 1,
+            totalRounds: 3,
+            roundDuration: 180,
+            restDuration: 60,
+            currentTime: 180,
+            isRest: false,
+            soundEnabled: true,
+            vibrationEnabled: true,
+            timerId: null,
+            isCountdown: false,
+            countdownValue: 3,
+            incrementSize: 30,
+            bellVolume: 0.8,
+            theme: 'dark',
+            menuOpen: false
+        };
+
+        const timeDisplay = document.getElementById('timeDisplay');
+        const phaseLabel = document.getElementById('phaseLabel');
+        const roundInfo = document.getElementById('roundInfo');
+        const timerCircle = document.getElementById('timerCircle');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const hamburger = document.getElementById('hamburger');
+        const sideMenu = document.getElementById('sideMenu');
+        const menuOverlay = document.getElementById('menuOverlay');
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playBoxingBell(duration = 3.0) {
+            if (!state.soundEnabled || !audioCtx) return;
+
+            const volume = state.bellVolume;
+            const now = audioCtx.currentTime;
+
+            // FM synthesis for metallic bell
+            const carrier = audioCtx.createOscillator();
+            const modulator = audioCtx.createOscillator();
+            const modGain = audioCtx.createGain();
+            const bellGain = audioCtx.createGain();
+
+            carrier.frequency.value = 880;
+            modulator.frequency.value = 220;
+            modGain.gain.value = 800;
+
+            carrier.type = 'sine';
+            modulator.type = 'sine';
+
+            modulator.connect(modGain);
+            modGain.connect(carrier.frequency);
+            carrier.connect(bellGain);
+            bellGain.connect(audioCtx.destination);
+
+            bellGain.gain.setValueAtTime(0, now);
+            bellGain.gain.linearRampToValueAtTime(volume * 0.4, now + 0.01);
+            bellGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            carrier.frequency.setValueAtTime(880, now);
+            carrier.frequency.exponentialRampToValueAtTime(875, now + duration);
+
+            carrier.start(now);
+            modulator.start(now);
+            carrier.stop(now + duration + 0.1);
+            modulator.stop(now + duration + 0.1);
+
+            const sparkle = audioCtx.createOscillator();
+            const sparkleGain = audioCtx.createGain();
+            sparkle.frequency.value = 3520;
+            sparkle.type = 'triangle';
+            sparkle.connect(sparkleGain);
+            sparkleGain.connect(audioCtx.destination);
+            sparkleGain.gain.setValueAtTime(volume * 0.15, now);
+            sparkleGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.5);
+            sparkle.start(now);
+            sparkle.stop(now + duration * 0.5);
+
+            const click = audioCtx.createOscillator();
+            const clickGain = audioCtx.createGain();
+            click.frequency.value = 2000;
+            click.type = 'square';
+            click.connect(clickGain);
+            clickGain.connect(audioCtx.destination);
+            clickGain.gain.setValueAtTime(volume * 0.1, now);
+            clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            click.start(now);
+            click.stop(now + 0.05);
+        }
+
+        function playTick() {
+            if (!state.soundEnabled || !audioCtx) return;
+            const volume = state.bellVolume * 0.5;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 1200;
+            osc.type = 'square';
+            gain.gain.setValueAtTime(volume * 0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+            osc.start(now);
+            osc.stop(now + 0.03);
+            if (state.vibrationEnabled && navigator.vibrate) navigator.vibrate(20);
+        }
+
+        function playStartBell() {
+            playBoxingBell(3.0);
+            if (state.vibrationEnabled && navigator.vibrate) navigator.vibrate([150, 80, 300]);
+        }
+
+        function playEndBell() {
+            playBoxingBell(4.5);
+            if (state.vibrationEnabled && navigator.vibrate) navigator.vibrate([400]);
+        }
+
+        function playWarningBeep() {
+            if (!state.soundEnabled || !audioCtx) return;
+            const volume = state.bellVolume * 0.4;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 1200;
+            osc.type = 'square';
+            gain.gain.setValueAtTime(volume * 0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+            osc.start(now);
+            osc.stop(now + 0.06);
+            if (state.vibrationEnabled && navigator.vibrate) navigator.vibrate([40, 20, 40]);
+        }
+
+        function toggleMenu() {
+            state.menuOpen = !state.menuOpen;
+            hamburger.classList.toggle('active');
+            sideMenu.classList.toggle('open');
+            menuOverlay.classList.toggle('open');
+        }
+
+        function closeMenu() {
+            state.menuOpen = false;
+            hamburger.classList.remove('active');
+            sideMenu.classList.remove('open');
+            menuOverlay.classList.remove('open');
+        }
+
+        function startCountdown() {
+            state.isCountdown = true;
+            state.countdownValue = 3;
+            updateCountdownDisplay();
+            playTick();
+            const countdownInterval = setInterval(() => {
+                state.countdownValue--;
+                if (state.countdownValue > 0) {
+                    playTick();
+                    updateCountdownDisplay();
+                } else {
+                    clearInterval(countdownInterval);
+                    state.isCountdown = false;
+                    startRound();
+                }
+            }, 1000);
+            state.timerId = countdownInterval;
+        }
+
+        function updateCountdownDisplay() {
+            timeDisplay.textContent = state.countdownValue;
+            timeDisplay.classList.add('pop');
+            setTimeout(() => timeDisplay.classList.remove('pop'), 200);
+            phaseLabel.textContent = 'GET READY';
+            phaseLabel.className = 'phase-label countdown';
+            timerCircle.className = 'timer-circle countdown';
+            timerCircle.style.setProperty('--progress', `${((3 - state.countdownValue) / 3) * 100}%`);
+            roundInfo.textContent = `Starting Round ${state.currentRound}...`;
+        }
+
+        function startRound() {
+            playStartBell();
+            state.isRunning = true;
+            state.currentTime = state.roundDuration;
+            updateDisplay();
+            state.timerId = setInterval(tick, 1000);
+        }
+
+        function tick() {
+            if (state.currentTime > 0) {
+                state.currentTime--;
+                if (state.currentTime === 10) playWarningBeep();
+                if (state.currentTime <= 3 && state.currentTime > 0) playWarningBeep();
+            } else {
+                handleRoundEnd();
+            }
+            updateDisplay();
+        }
+
+        function handleRoundEnd() {
+            clearInterval(state.timerId);
+            if (state.isRest) {
+                state.isRest = false;
+                state.currentRound++;
+                if (state.currentRound > state.totalRounds) {
+                    state.isRunning = false;
+                    playEndBell();
+                    state.currentRound = 1;
+                    state.currentTime = state.roundDuration;
+                    phaseLabel.textContent = 'FINISHED';
+                    phaseLabel.className = 'phase-label';
+                    timerCircle.className = 'timer-circle';
+                    startBtn.textContent = 'Start';
+                    startBtn.classList.add('btn-primary');
+                    return;
+                }
+                startCountdown();
+            } else {
+                state.isRest = true;
+                state.currentTime = state.restDuration;
+                playEndBell();
+                updateDisplay();
+                state.timerId = setInterval(tick, 1000);
+            }
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(state.currentTime / 60);
+            const seconds = state.currentTime % 60;
+            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const totalTime = state.isRest ? state.restDuration : state.roundDuration;
+            const progress = ((totalTime - state.currentTime) / totalTime) * 100;
+            timerCircle.style.setProperty('--progress', `${progress}%`);
+            if (state.isRunning) {
+                phaseLabel.textContent = state.isRest ? 'REST' : 'FIGHT';
+                phaseLabel.className = state.isRest ? 'phase-label rest' : 'phase-label';
+                timerCircle.className = state.isRest ? 'timer-circle rest' : 'timer-circle';
+            } else if (state.isPaused) {
+                phaseLabel.textContent = 'PAUSED';
+                phaseLabel.className = 'phase-label';
+                timerCircle.className = 'timer-circle';
+            } else {
+                phaseLabel.textContent = 'READY';
+                phaseLabel.className = 'phase-label';
+                timerCircle.className = 'timer-circle';
+            }
+            roundInfo.textContent = `Round ${state.currentRound} of ${state.totalRounds}`;
+            if (state.currentTime <= 10 && state.currentTime > 0 && state.isRunning && !state.isRest) {
+                timeDisplay.classList.add('warning');
+            } else {
+                timeDisplay.classList.remove('warning');
+            }
+        }
+
+        function startTimer() {
+            if (state.isRunning) {
+                pauseTimer();
+                return;
+            }
+            if (state.isPaused) {
+                state.isPaused = false;
+                state.isRunning = true;
+                startBtn.textContent = 'Pause';
+                startBtn.classList.remove('btn-primary');
+                startBtn.style.background = '#333';
+                state.timerId = setInterval(tick, 1000);
+                return;
+            }
+            initAudio();
+            startBtn.textContent = 'Pause';
+            startBtn.classList.remove('btn-primary');
+            startBtn.style.background = '#333';
+            startCountdown();
+        }
+
+        function pauseTimer() {
+            state.isRunning = false;
+            state.isPaused = true;
+            clearInterval(state.timerId);
+            startBtn.textContent = 'Resume';
+            startBtn.classList.add('btn-primary');
+            startBtn.style.background = '';
+            phaseLabel.textContent = 'PAUSED';
+            timerCircle.className = 'timer-circle';
+        }
+
+        function stopTimer() {
+            state.isRunning = false;
+            state.isPaused = false;
+            state.isCountdown = false;
+            clearInterval(state.timerId);
+            startBtn.textContent = 'Start';
+            startBtn.classList.add('btn-primary');
+            startBtn.style.background = '';
+        }
+
+        function resetTimer() {
+            stopTimer();
+            state.currentRound = 1;
+            state.isRest = false;
+            state.currentTime = state.roundDuration;
+            updateDisplay();
+        }
+
+        function adjustTime(type, direction) {
+            if (state.isRunning || state.isCountdown) return;
+            const delta = direction * state.incrementSize;
+            if (type === 'round') {
+                state.roundDuration = Math.max(30, Math.min(600, state.roundDuration + delta));
+                const mins = Math.floor(state.roundDuration / 60);
+                const secs = state.roundDuration % 60;
+                document.getElementById('roundTime').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (!state.isRest) state.currentTime = state.roundDuration;
+            } else {
+                state.restDuration = Math.max(15, Math.min(300, state.restDuration + delta));
+                const mins = Math.floor(state.restDuration / 60);
+                const secs = state.restDuration % 60;
+                document.getElementById('restTime').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (state.isRest) state.currentTime = state.restDuration;
+            }
+            updateDisplay();
+        }
+
+        function adjustRounds(delta) {
+            if (state.isRunning || state.isCountdown) return;
+            state.totalRounds = Math.max(1, Math.min(20, state.totalRounds + delta));
+            document.getElementById('roundsCount').textContent = state.totalRounds;
+            updateDisplay();
+        }
+
+        function toggleSetting(setting) {
+            if (setting === 'sound') {
+                state.soundEnabled = !state.soundEnabled;
+                document.getElementById('soundToggle').classList.toggle('active');
+                if (state.soundEnabled) initAudio();
+            } else {
+                state.vibrationEnabled = !state.vibrationEnabled;
+                document.getElementById('vibrationToggle').classList.toggle('active');
+            }
+        }
+
+        function setIncrement(size) {
+            state.incrementSize = parseInt(size);
+            document.querySelectorAll('.increment-option').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.increment) === state.incrementSize);
+            });
+        }
+
+        function updateVolume(value) {
+            state.bellVolume = value / 100;
+            document.getElementById('volumeValue').textContent = value + '%';
+        }
+
+        function setTheme(theme) {
+            state.theme = theme;
+            document.body.setAttribute('data-theme', theme);
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+            localStorage.setItem('sparringPro_theme', theme);
+        }
+
+        // Handle website link click
+        function openWebsite(e) {
+            e.preventDefault();
+            const url = document.getElementById('websiteLink').href;
+            window.open(url, '_blank');
+            closeMenu();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            startBtn.addEventListener('click', startTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            hamburger.addEventListener('click', toggleMenu);
+            menuOverlay.addEventListener('click', closeMenu);
+
+            document.getElementById('roundMinus').addEventListener('click', () => adjustTime('round', -1));
+            document.getElementById('roundPlus').addEventListener('click', () => adjustTime('round', 1));
+            document.getElementById('restMinus').addEventListener('click', () => adjustTime('rest', -1));
+            document.getElementById('restPlus').addEventListener('click', () => adjustTime('rest', 1));
+            document.getElementById('roundsMinus').addEventListener('click', () => adjustRounds(-1));
+            document.getElementById('roundsPlus').addEventListener('click', () => adjustRounds(1));
+            document.getElementById('soundToggle').addEventListener('click', () => toggleSetting('sound'));
+            document.getElementById('vibrationToggle').addEventListener('click', () => toggleSetting('vibration'));
+
+            document.querySelectorAll('.increment-option').forEach(btn => {
+                btn.addEventListener('click', function() { setIncrement(this.dataset.increment); });
+            });
+
+            document.getElementById('bellVolume').addEventListener('input', function() { updateVolume(this.value); });
+
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.addEventListener('click', function() { setTheme(this.dataset.theme); });
+            });
+
+            document.getElementById('testSoundBtn').addEventListener('click', function() {
+                initAudio();
+                playBoxingBell(3.0);
+            });
+
+            // Website link
+            document.getElementById('websiteLink').addEventListener('click', openWebsite);
+
+            const savedTheme = localStorage.getItem('sparringPro_theme');
+            if (savedTheme) setTheme(savedTheme);
+            updateDisplay();
+        });
+
+        if ('wakeLock' in navigator) {
+            let wakeLock = null;
+            startBtn.addEventListener('click', async () => {
+                if (state.isRunning && !wakeLock) {
+                    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+                } else if (!state.isRunning && wakeLock) {
+                    wakeLock.release();
+                    wakeLock = null;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
